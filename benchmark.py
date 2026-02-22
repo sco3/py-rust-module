@@ -28,30 +28,44 @@ NUM_USERS = 100_000
 BENCHMARK_ITERATIONS = 10
 
 
-def generate_pydantic_users(count: int) -> List[PydanticUser]:
-    """Generate a list of Pydantic User instances with random data."""
-    users = []
+def generate_user_data(count: int) -> List[Tuple[int, str, str, int, bool]]:
+    """Generate shared user data tuples for both Pydantic and PyO3 users."""
+    data = []
     for i in range(count):
+        data.append((
+            i,
+            f"User_{i}",
+            f"user{i}@example.com",
+            random.randint(18, 80),
+            random.choice([True, False]),
+        ))
+    return data
+
+
+def generate_pydantic_users(data: List[Tuple[int, str, str, int, bool]]) -> List[PydanticUser]:
+    """Generate a list of Pydantic User instances from shared data."""
+    users = []
+    for id_, name, email, age, active in data:
         users.append(PydanticUser(
-            id=i,
-            name=f"User_{i}",
-            email=f"user{i}@example.com",
-            age=random.randint(18, 80),
-            active=random.choice([True, False]),
+            id=id_,
+            name=name,
+            email=email,
+            age=age,
+            active=active,
         ))
     return users
 
 
-def generate_pyo3_users(count: int) -> List["py_rust_module.User"]:
-    """Generate a list of PyO3 User instances with random data."""
+def generate_pyo3_users(data: List[Tuple[int, str, str, int, bool]]) -> List["py_rust_module.User"]:
+    """Generate a list of PyO3 User instances from shared data."""
     users = []
-    for i in range(count):
+    for id_, name, email, age, active in data:
         users.append(py_rust_module.User(
-            id=i,
-            name=f"User_{i}",
-            email=f"user{i}@example.com",
-            age=random.randint(18, 80),
-            active=random.choice([True, False]),
+            id=id_,
+            name=name,
+            email=email,
+            age=age,
+            active=active,
         ))
     return users
 
@@ -141,23 +155,37 @@ def main():
         print("\nERROR: py_rust_module not available. Build with: maturin develop")
         return
     
-    # Generate test datasets
-    print("\nGenerating test datasets...")
+    # Generate shared test dataset
+    print("\nGenerating shared test dataset...")
     start = time.perf_counter()
-    pydantic_users = generate_pydantic_users(NUM_USERS)
+    user_data = generate_user_data(NUM_USERS)
+    data_gen_time = (time.perf_counter() - start) * 1000
+    print(f"  Shared data generated: {data_gen_time:.2f} ms")
+
+    # Create both user types from the same data
+    start = time.perf_counter()
+    pydantic_users = generate_pydantic_users(user_data)
     pydantic_gen_time = (time.perf_counter() - start) * 1000
-    print(f"  Pydantic users generated: {pydantic_gen_time:.2f} ms")
-    
+    print(f"  Pydantic users created: {pydantic_gen_time:.2f} ms")
+
     start = time.perf_counter()
-    pyo3_users = generate_pyo3_users(NUM_USERS)
+    pyo3_users = generate_pyo3_users(user_data)
     pyo3_gen_time = (time.perf_counter() - start) * 1000
-    print(f"  PyO3 users generated: {pyo3_gen_time:.2f} ms")
-    
-    # Verify datasets have similar distributions
+    print(f"  PyO3 users created: {pyo3_gen_time:.2f} ms")
+
+    # Verify datasets are identical (same active count and total age)
     pydantic_active = sum(1 for u in pydantic_users if u.active)
     pyo3_active = sum(1 for u in pyo3_users if u.active)
-    print(f"\n  Pydantic active users: {pydantic_active:,} ({pydantic_active/NUM_USERS*100:.1f}%)")
-    print(f"  PyO3 active users:     {pyo3_active:,} ({pyo3_active/NUM_USERS*100:.1f}%)")
+    pydantic_total_age = sum(u.age for u in pydantic_users)
+    pyo3_total_age = sum(u.age for u in pyo3_users)
+    print(f"\n  Dataset verification:")
+    print(f"    Pydantic active users: {pydantic_active:,} ({pydantic_active/NUM_USERS*100:.1f}%)")
+    print(f"    PyO3 active users:     {pyo3_active:,} ({pyo3_active/NUM_USERS*100:.1f}%)")
+    print(f"    Pydantic total age:    {pydantic_total_age:,}")
+    print(f"    PyO3 total age:        {pyo3_total_age:,}")
+    assert pydantic_active == pyo3_active, "Active user count mismatch!"
+    assert pydantic_total_age == pyo3_total_age, "Total age mismatch!"
+    print(f"    ✓ Datasets are identical")
     
     results = []
     
@@ -191,6 +219,13 @@ def main():
     results.append(result_pyo3)
     total_age, active_count, elapsed = result_pyo3["result"]
     print(f"    Result: total_age={total_age:,}, active_count={active_count:,}, elapsed={elapsed:.2f} μs")
+
+    # Assert both implementations produce identical results
+    assert result_pydantic["result"][0] == result_pyo3["result"][0], \
+        f"Mismatch in total_age: Pydantic={result_pydantic['result'][0]} vs PyO3={result_pyo3['result'][0]}"
+    assert result_pydantic["result"][1] == result_pyo3["result"][1], \
+        f"Mismatch in active_count: Pydantic={result_pydantic['result'][1]} vs PyO3={result_pyo3['result'][1]}"
+    print(f"    ✓ Results match: total_age={result_pydantic['result'][0]:,}, active_count={result_pydantic['result'][1]:,}")
     
     # =========================================================================
     # Benchmark 2: Using benchmark_* functions (dict return)
@@ -220,6 +255,13 @@ def main():
     results.append(result_bench_pyo3)
     bench_result = result_bench_pyo3["result"]
     print(f"    Result: total_age={bench_result['total_age']:,}, active_count={bench_result['active_count']:,}")
+
+    # Assert both implementations produce identical results
+    assert result_bench_pydantic["result"]["total_age"] == result_bench_pyo3["result"]["total_age"], \
+        f"Mismatch in total_age: Pydantic={result_bench_pydantic['result']['total_age']} vs PyO3={result_bench_pyo3['result']['total_age']}"
+    assert result_bench_pydantic["result"]["active_count"] == result_bench_pyo3["result"]["active_count"], \
+        f"Mismatch in active_count: Pydantic={result_bench_pydantic['result']['active_count']} vs PyO3={result_bench_pyo3['result']['active_count']}"
+    print(f"    ✓ Results match: total_age={bench_result['total_age']:,}, active_count={bench_result['active_count']:,}")
     
     # =========================================================================
     # Print Results Table

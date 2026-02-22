@@ -34,14 +34,14 @@ The test processes **100,000 User instances**, performing conditional age summat
 
 | Benchmark | Pydantic (μs) | PyO3 (μs) | Speedup |
 |-----------|---------------|-----------|---------|
-| `process_pydantic_users` (getattr + PyResult) | 10,349 | 2,148 | **4.82x** |
-| `process_pyo3_users` (direct field access) | 10,774 | 2,152 | **5.01x** |
+| `process_pydantic_users` (getattr + PyResult) | 9,850 | 2,125 | **4.64x** |
+| `process_pyo3_users` (direct field access) | 9,861 | 2,304 | **4.28x** |
 
-*Benchmark: 100,000 users, 10 iterations, Python 3.14*
+*Benchmark: 100,000 users, 10 iterations, Python 3.14. Both implementations operate on identical shared data with verified matching results.*
 
 #### The "Border Tax" Explained
 
-The **~8,200 μs delta** represents the performance penalty when accessing Python object attributes from Rust:
+The **~7,700 μs delta** represents the performance penalty when accessing Python object attributes from Rust:
 
 | Tax Type | Pydantic Overhead | PyO3 Advantage |
 |----------|-------------------|----------------|
