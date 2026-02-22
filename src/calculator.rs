@@ -44,8 +44,8 @@ impl Calculator {
     /// calc = Calculator(2.0)
     /// calc.multiply(3.0)
     /// ```
-    ///
-    /// @returns `f64` — the updated internal value after multiplication.
+    /// # Returns
+    /// `f64` — the updated internal value after multiplication.
     fn multiply(&mut self, x: f64) -> f64 {
         self.value *= x;
         self.value
