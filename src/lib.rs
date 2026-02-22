@@ -321,8 +321,9 @@ fn process_pydantic_users(_py: Python<'_>, users: Bound<'_, PyAny>) -> PyResult<
     let mut active_count: i64 = 0;
     
     // Iterate through the Python list
-    for i in 0..users.len()? {
-        let user_obj = users.get_item(i)?;
+    for user_obj in users.try_iter()? {
+        let user_obj = user_obj?;
+
         
         // getattr involves string hash + dictionary lookup - this is the "Access Tax"
         let active: bool = user_obj.getattr("active")?.extract()?;
