@@ -13,17 +13,50 @@ A high-performance Python module written in Rust using PyO3. This project demons
 
 ## Performance Benchmarks
 
-Comparison between Rust `py_rust_module.User` vs Pydantic `User` (with orjson):
+### JSON Operations: Rust `py_rust_module.User` vs Pydantic `User`
 
-| Operation | Rust (μs) | Pydantic+orjson (μs) | Speedup |
-|-----------|-----------|----------------------|---------|
-| `json()` | 0.22 | 0.89 | **4.09x** |
-| `json_pretty()` | 0.16 | 0.94 | **5.87x** |
-| `from_json()` | 0.20 | 0.98 | **4.80x** |
-| `dict()` | 0.24 | 0.71 | **2.95x** |
-| `model_copy()` | 0.13 | 1.08 | **8.65x** |
+| Operation | Rust (μs) | Pydantic (μs) | Speedup |
+|-----------|-----------|---------------|---------|
+| `json()` | 0.15 | 0.80 | **5.28x** |
+| `json_pretty()` | 0.16 | 0.95 | **5.92x** |
+| `from_json()` | 0.20 | 0.87 | **4.27x** |
+| `dict()` | 0.26 | 0.73 | **2.76x** |
+| `model_copy()` | 0.13 | 1.12 | **8.83x** |
 
 *Benchmark: 100,000 iterations on Python 3.14*
+
+---
+
+### Border Tax Benchmark: Pydantic V2 vs PyO3 `#[pyclass]`
+
+This benchmark compares attribute access patterns between Pydantic models and PyO3-backed classes.
+The test processes **100,000 User instances**, performing conditional age summation (`if active { total += age }`).
+
+| Benchmark | Pydantic (μs) | PyO3 (μs) | Speedup |
+|-----------|---------------|-----------|---------|
+| `process_pydantic_users` (getattr + PyResult) | 10,349 | 2,148 | **4.82x** |
+| `process_pyo3_users` (direct field access) | 10,774 | 2,152 | **5.01x** |
+
+*Benchmark: 100,000 users, 10 iterations, Python 3.14*
+
+#### The "Border Tax" Explained
+
+The **~8,200 μs delta** represents the performance penalty when accessing Python object attributes from Rust:
+
+| Tax Type | Pydantic Overhead | PyO3 Advantage |
+|----------|-------------------|----------------|
+| **Entry Tax** | `Vec<PyObject>` - raw Python objects | `Vec<PyRef<User>>` - direct Rust struct access |
+| **Access Tax** | `getattr()` → string hash + dict lookup on Python heap | Direct field access at fixed memory offset |
+| **Error Tax** | `PyResult` handles potential `AttributeError` | Fields guaranteed to exist - no error handling |
+
+**Why the conditional summation?**
+
+The logic `if active { total_age += age }` prevents compiler optimization by:
+- Actually using retrieved values (not a no-op)
+- Creating a data dependency that forces real memory access
+- Requiring both the `active` check AND `age` retrieval
+
+This benchmark demonstrates why PyO3 `#[pyclass]` is beneficial for performance-critical code that processes many objects.
 
 ## Prerequisites
 
@@ -223,7 +256,6 @@ maturin develop
 **Python (pyproject.toml):**
 - `maturin` - Build tool for Rust extensions
 - `pydantic` - For comparison benchmarks
-- `orjson` - Fast JSON library for Pydantic benchmarks
 
 ## Resources
 
@@ -231,7 +263,7 @@ maturin develop
 - [Maturin Documentation](https://www.maturin.rs/)
 - [Rust Book](https://doc.rust-lang.org/book/)
 - [Serde JSON](https://docs.rs/serde_json/)
-- [orjson Documentation](https://github.com/ijl/orjson)
+- [Pydantic Documentation](https://docs.pydantic.dev/)
 
 ## License
 
