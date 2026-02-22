@@ -1,0 +1,19 @@
+[build-system]
+requires = ["maturin>=1.0,<2.0"]
+build-backend = "maturin"
+
+[project]
+name = "py-rust-module"
+version = "0.1.0"
+description = "A Python module with Rust extensions"
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "Apache-2.0" }
+dependencies = [
+    "orjson>=3.11.7",
+    "pydantic>=2.12.5",
+]
+
+[tool.maturin]
+features = ["pyo3/extension-module"]
+
