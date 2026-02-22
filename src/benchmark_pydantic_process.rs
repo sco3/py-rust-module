@@ -4,7 +4,7 @@ use std::time::Instant;
 
 /// Attempts to extract the `age` attribute from a Python object if it is active.
 ///
-/// Returns:
+/// # Returns
 /// - `Ok(None)` when the object has `active == false`.
 /// - `Ok(Some(age))` when `active` is true and `age` is present and extractable.
 /// - `Err(PyErr)` if required attributes like `active` or `age` are missing or fail to extract.
