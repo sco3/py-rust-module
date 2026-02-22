@@ -31,7 +31,25 @@ ITERATIONS = 100000
 
 
 def benchmark(func, *args, iterations=ITERATIONS, name="", **kwargs):
-    """Run a function multiple times and return timing statistics"""
+    """
+    Measure execution times for repeated calls to a callable and return summary statistics.
+    
+    Parameters:
+        func (callable): The function or callable to invoke.
+        *args: Positional arguments to pass to `func`.
+        iterations (int): Number of times to call `func`. Defaults to ITERATIONS.
+        name (str): Optional label included in the returned summary.
+        **kwargs: Keyword arguments to pass to `func`.
+    
+    Returns:
+        dict: Summary statistics for the measured runs with keys:
+            - "name" (str): The provided label.
+            - "mean" (float): Average execution time in microseconds.
+            - "median" (float): Median execution time in microseconds.
+            - "stdev" (float): Standard deviation of execution times in microseconds.
+            - "min" (float): Minimum execution time in microseconds.
+            - "max" (float): Maximum execution time in microseconds.
+    """
     times = []
     for _ in range(iterations):
         start = time.perf_counter()
@@ -50,7 +68,13 @@ def benchmark(func, *args, iterations=ITERATIONS, name="", **kwargs):
 
 
 def print_results(results):
-    """Print benchmark results in a formatted table"""
+    """
+    Prints benchmark results as a formatted table.
+    
+    Parameters:
+        results (Iterable[Mapping[str, float]]): Sequence of result records where each record contains the keys
+            'name' (str), 'mean', 'median', 'stdev', 'min', and 'max' with numeric values representing times in microseconds.
+    """
     print(f"\n{'Operation':<30} {'Mean (μs)':<12} {'Median (μs)':<12} {'Stdev':<10} {'Min (μs)':<10} {'Max (μs)':<10}")
     print("-" * 94)
     for r in results:
@@ -58,6 +82,11 @@ def print_results(results):
 
 
 def main():
+    """
+    Run a suite of performance benchmarks comparing the Rust py_rust_module.User implementation with the Pydantic User and print a summary of results.
+    
+    Creates User instances (Rust when available and Pydantic), measures execution times for JSON serialization (compact and pretty), JSON deserialization, conversion to dict, and copying with modifications, aggregates statistics for each operation, prints a formatted results table, and — when the Rust module is available — prints per-operation speedup ratios. Uses the module-level ITERATIONS, USER_DATA, and JSON_STRING constants and the RUST_AVAILABLE flag. 
+    """
     print("=" * 94)
     print("Benchmark: Rust py_rust_module.User vs Pydantic User")
     print(f"Iterations: {ITERATIONS:,}")
