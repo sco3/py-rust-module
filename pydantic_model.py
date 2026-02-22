@@ -1,7 +1,6 @@
 """
 Pydantic User model equivalent to the Rust implementation
 """
-import orjson
 from pydantic import BaseModel
 
 
@@ -16,39 +15,38 @@ class User(BaseModel):
     def json(self) -> str:
         """
         Serialize the model to a compact JSON string.
-        
+
         Returns:
             JSON string of the model with no extra indentation or unnecessary whitespace.
         """
-        return orjson.dumps(self.model_dump()).decode()
+        return self.model_dump_json()
 
     def json_pretty(self) -> str:
         """
         Serialize the model to a human-readable JSON string with two-space indentation.
-        
+
         Returns:
             pretty_json (str): Pretty-printed JSON representation of the model using two-space indentation.
         """
-        return orjson.dumps(self.model_dump(), option=orjson.OPT_INDENT_2).decode()
+        return self.model_dump_json(indent=2)
 
     @classmethod
     def from_json(cls, json_str: str) -> "User":
         """
         Create a User instance from a JSON string.
-        
+
         Parameters:
             json_str (str): JSON string representing a User object with keys matching the model fields.
-        
+
         Returns:
             user (User): The constructed User instance.
         """
-        data = orjson.loads(json_str)
-        return cls(**data)
+        return cls.model_validate_json(json_str)
 
     def dict(self) -> dict:
         """
         Return a dictionary of the model's field names and values.
-        
+
         Returns:
             dict: Mapping of field names to their corresponding values.
         """
@@ -57,10 +55,10 @@ class User(BaseModel):
     def model_copy(self, **kwargs) -> "User":
         """
         Create a new User instance based on this one with specified fields updated.
-        
+
         Parameters:
             **kwargs: Field values to override in the copied model (field name -> new value).
-        
+
         Returns:
             User: A new User instance with the provided updates applied.
         """
@@ -69,7 +67,7 @@ class User(BaseModel):
     def __repr__(self) -> str:
         """
         Return a concise string representation of the User suitable for debugging.
-        
+
         Returns:
             A string in the form "User(id=<id>, name='<name>', email='<email>')" with the instance's id, name, and email substituted.
         """

@@ -1,6 +1,7 @@
 use pyo3::prelude::*;
 use pyo3::types::PyDict;
 use serde::{Deserialize, Serialize};
+use std::time::Instant;
 
 /// Compute the sum of two integers.
 ///
@@ -292,6 +293,177 @@ impl User {
     }
 }
 
+/// Process a list of Pydantic User objects using getattr for attribute access.
+///
+/// This function demonstrates the "Border Tax" - the overhead of accessing Python object
+/// attributes through getattr (dictionary lookup, string hashing) vs direct field access.
+///
+/// # Arguments
+///
+/// * `py` - Python GIL token
+/// * `users` - A list of Python objects (expected to be Pydantic User instances)
+///
+/// # Returns
+///
+/// A tuple containing:
+/// - The sum of ages for active users
+/// - The count of active users
+/// - The elapsed time in microseconds
+///
+/// # Note
+///
+/// Uses PyResult to handle potential AttributeError during getattr, which is part of the "tax"
+#[pyfunction]
+fn process_pydantic_users(_py: Python<'_>, users: Bound<'_, PyAny>) -> PyResult<(i64, i64, f64)> {
+    let start = Instant::now();
+    
+    let mut total_age: i64 = 0;
+    let mut active_count: i64 = 0;
+    
+    // Iterate through the Python list
+    for user_obj in users.try_iter()? {
+        let user_obj = user_obj?;
+
+        
+        // getattr involves string hash + dictionary lookup - this is the "Access Tax"
+        let active: bool = user_obj.getattr("active")?.extract()?;
+        
+        if active {
+            let age: i32 = user_obj.getattr("age")?.extract()?;
+            total_age += age as i64;
+            active_count += 1;
+        }
+    }
+    
+    let elapsed = start.elapsed().as_micros() as f64;
+    Ok((total_age, active_count, elapsed))
+}
+
+/// Process a list of PyO3 User objects using direct field access.
+///
+/// This function demonstrates the performance advantage of direct field access
+/// through PyO3's #[pyclass] - values are at fixed memory offsets.
+///
+/// # Arguments
+///
+/// * `py` - Python GIL token
+/// * `users` - A list of PyO3 User objects
+///
+/// # Returns
+///
+/// A tuple containing:
+/// - The sum of ages for active users
+/// - The count of active users
+/// - The elapsed time in microseconds
+#[pyfunction]
+fn process_pyo3_users(_py: Python<'_>, users: Bound<'_, PyAny>) -> PyResult<(i64, i64, f64)> {
+    let start = Instant::now();
+    
+    let mut total_age: i64 = 0;
+    let mut active_count: i64 = 0;
+    
+    // Iterate through the Python list and extract PyO3 User references
+    for user_obj in users.try_iter()? {
+        let user_obj = user_obj?;
+
+        // Extract the PyO3 User - this is the "Entry Tax" (one-time conversion)
+        let user = user_obj.extract::<PyRef<User>>()?;
+        
+        // Direct field access - no dictionary lookup, fixed memory offset
+        if user.active {
+            total_age += user.age as i64;
+            active_count += 1;
+        }
+    }
+    
+    let elapsed = start.elapsed().as_micros() as f64;
+    Ok((total_age, active_count, elapsed))
+}
+
+/// Benchmark function that processes Pydantic users and returns timing info.
+///
+/// # Arguments
+///
+/// * `py` - Python GIL token
+/// * `users` - A list of Python objects (Pydantic User instances)
+///
+/// # Returns
+///
+/// A dictionary with timing statistics and result summary
+#[pyfunction]
+fn benchmark_pydantic_process<'py>(py: Python<'py>, users: Bound<'py, PyAny>) -> PyResult<Bound<'py, PyDict>> {
+    let start = Instant::now();
+    
+    let mut total_age: i64 = 0;
+    let mut active_count: i64 = 0;
+    let mut errors: i64 = 0;
+    
+    for i in 0..users.len()? {
+        let user_obj = users.get_item(i)?;
+        match user_obj.getattr("active") {
+            Ok(active_val) => {
+                if let Ok(active) = active_val.extract::<bool>() {
+                    if active {
+                        if let Ok(age_val) = user_obj.getattr("age") {
+                            if let Ok(age) = age_val.extract::<i32>() {
+                                total_age += age as i64;
+                                active_count += 1;
+                            }
+                        }
+                    }
+                }
+            }
+            Err(_) => errors += 1,
+        }
+    }
+    
+    let elapsed_us = start.elapsed().as_micros() as f64;
+    
+    let dict = PyDict::new(py);
+    dict.set_item("total_age", total_age)?;
+    dict.set_item("active_count", active_count)?;
+    dict.set_item("errors", errors)?;
+    dict.set_item("elapsed_us", elapsed_us)?;
+    Ok(dict)
+}
+
+/// Benchmark function that processes PyO3 users and returns timing info.
+///
+/// # Arguments
+///
+/// * `py` - Python GIL token
+/// * `users` - A list of PyO3 User objects
+///
+/// # Returns
+///
+/// A dictionary with timing statistics and result summary
+#[pyfunction]
+fn benchmark_pyo3_process<'py>(py: Python<'py>, users: Bound<'py, PyAny>) -> PyResult<Bound<'py, PyDict>> {
+    let start = Instant::now();
+    
+    let mut total_age: i64 = 0;
+    let mut active_count: i64 = 0;
+    
+    for i in 0..users.len()? {
+        let user_obj = users.get_item(i)?;
+        let user = user_obj.extract::<PyRef<User>>()?;
+        
+        // Direct field access - no dictionary lookup, fixed memory offset
+        if user.active {
+            total_age += user.age as i64;
+            active_count += 1;
+        }
+    }
+    
+    let elapsed_us = start.elapsed().as_micros() as f64;
+    
+    let dict = PyDict::new(py);
+    dict.set_item("total_age", total_age)?;
+    dict.set_item("active_count", active_count)?;
+    dict.set_item("elapsed_us", elapsed_us)?;
+    Ok(dict)
+}
+
 /// Initializes the Python module and registers the free functions and classes exposed to Python.
 ///
 /// This function is the PyO3 module initializer; it adds the `add`, `multiply`, and `greet` functions
@@ -317,5 +489,9 @@ fn py_rust_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(greet, m)?)?;
     m.add_class::<Calculator>()?;
     m.add_class::<User>()?;
+    m.add_function(wrap_pyfunction!(process_pydantic_users, m)?)?;
+    m.add_function(wrap_pyfunction!(process_pyo3_users, m)?)?;
+    m.add_function(wrap_pyfunction!(benchmark_pydantic_process, m)?)?;
+    m.add_function(wrap_pyfunction!(benchmark_pyo3_process, m)?)?;
     Ok(())
 }
