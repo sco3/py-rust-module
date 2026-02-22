@@ -363,8 +363,9 @@ fn process_pyo3_users(_py: Python<'_>, users: Bound<'_, PyAny>) -> PyResult<(i64
     let mut active_count: i64 = 0;
     
     // Iterate through the Python list and extract PyO3 User references
-    for i in 0..users.len()? {
-        let user_obj = users.get_item(i)?;
+    for user_obj in users.try_iter()? {
+        let user_obj = user_obj?;
+
         // Extract the PyO3 User - this is the "Entry Tax" (one-time conversion)
         let user = user_obj.extract::<PyRef<User>>()?;
         
