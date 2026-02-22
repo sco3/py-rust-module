@@ -2,8 +2,12 @@ use pyo3::prelude::*;
 use pyo3::types::PyDict;
 use std::time::Instant;
 
-/// Extracts specific data from a Python object, returning None if
-/// the object is inactive or malformed.
+/// Attempts to extract the `age` attribute from a Python object if it is active.
+///
+/// Returns:
+/// - `Ok(None)` when the object has `active == false`.
+/// - `Ok(Some(age))` when `active` is true and `age` is present and extractable.
+/// - `Err(PyErr)` if required attributes like `active` or `age` are missing or fail to extract.
 fn try_get_active_age(obj: &Bound<'_, PyAny>) -> PyResult<Option<i32>> {
     let active: bool = obj.getattr("active")?.extract()?;
     if !active {
