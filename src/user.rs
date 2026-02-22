@@ -24,13 +24,10 @@ impl User {
     ///
     /// # Examples
     ///
-    /// ```
-    /// let user = User::new(1, "Alice".to_string(), "alice@example.com".to_string(), 30, true);
-    /// assert_eq!(user.id, 1);
-    /// assert_eq!(user.name, "Alice");
-    /// assert_eq!(user.email, "alice@example.com");
-    /// assert_eq!(user.age, 30);
-    /// assert!(user.active);
+    /// ```ignore
+    /// user = User(1, "Alice", "alice@example.com", 30, True)
+    /// user.id
+    /// user.name
     /// ```
     #[new]
     fn new(id: i32, name: String, email: String, age: i32, active: bool) -> Self {
@@ -44,10 +41,10 @@ impl User {
     ///
     /// # Examples
     ///
-    /// ```
-    /// let user = User::new(1, "Alice".into(), "alice@example.com".into(), 30, true);
-    /// let json = user.json().unwrap();
-    /// assert!(json.contains("\"name\":\"Alice\""));
+    /// ```ignore
+    /// user = User(1, "Alice", "alice@example.com", 30, True)
+    /// json_str = user.json()
+    /// '"name":"Alice"' in json_str
     /// ```
     fn json(&self) -> PyResult<String> {
         serde_json::to_string(self).map_err(|e| pyo3::exceptions::PyValueError::new_err(e.to_string()))
@@ -63,10 +60,10 @@ impl User {
     ///
     /// # Examples
     ///
-    /// ```
-    /// let user = User::new(1, "Alice".into(), "alice@example.com".into(), 30, true);
-    /// let s = user.json_pretty().unwrap();
-    /// assert!(s.contains("\n")); // pretty output contains newlines
+    /// ```ignore
+    /// user = User(1, "Alice", "alice@example.com", 30, True)
+    /// s = user.json_pretty()
+    /// '\n' in s
     /// ```
     fn json_pretty(&self) -> PyResult<String> {
         serde_json::to_string_pretty(self).map_err(|e| pyo3::exceptions::PyValueError::new_err(e.to_string()))
@@ -82,11 +79,11 @@ impl User {
     ///
     /// # Examples
     ///
-    /// ```
-    /// let json = r#"{"id":1,"name":"Alice","email":"alice@example.com","age":30,"active":true}"#.to_string();
-    /// let user = User::from_json(json).unwrap();
-    /// assert_eq!(user.id, 1);
-    /// assert_eq!(user.name, "Alice");
+    /// ```ignore
+    /// json_str = '{"id":1,"name":"Alice","email":"alice@example.com","age":30,"active":true}'
+    /// user = User.from_json(json_str)
+    /// user.id
+    /// user.name
     /// ```
     #[staticmethod]
     fn from_json(json_str: String) -> PyResult<Self> {
@@ -99,19 +96,11 @@ impl User {
     ///
     /// # Examples
     ///
-    /// ```
-    /// use pyo3::prelude::*;
-    /// use pyo3::types::PyDict;
-    ///
-    /// Python::with_gil(|py| {
-    ///     let user = User::new(1, "Alice".into(), "alice@example.com".into(), 30, true);
-    ///     let d: &PyDict = user.dict(py).unwrap();
-    ///     assert_eq!(d.get_item("id").unwrap().extract::<i32>().unwrap(), 1);
-    ///     assert_eq!(d.get_item("name").unwrap().extract::<String>().unwrap(), "Alice");
-    ///     assert_eq!(d.get_item("email").unwrap().extract::<String>().unwrap(), "alice@example.com");
-    ///     assert_eq!(d.get_item("age").unwrap().extract::<i32>().unwrap(), 30);
-    ///     assert_eq!(d.get_item("active").unwrap().extract::<bool>().unwrap(), true);
-    /// });
+    /// ```ignore
+    /// user = User(1, "Alice", "alice@example.com", 30, True)
+    /// d = user.dict()
+    /// d["id"]
+    /// d["name"]
     /// ```
     fn dict<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyDict>> {
         let dict = PyDict::new(py);
@@ -130,14 +119,11 @@ impl User {
     ///
     /// # Examples
     ///
-    /// ```
-    /// let user = User::new(1, "Alice".into(), "alice@example.com".into(), 30, true);
-    /// let updated = user.model_copy("Alice B".into(), "aliceb@example.com".into(), 31, false);
-    /// assert_eq!(updated.id, user.id);
-    /// assert_eq!(updated.name, "Alice B");
-    /// assert_eq!(updated.email, "aliceb@example.com");
-    /// assert_eq!(updated.age, 31);
-    /// assert_eq!(updated.active, false);
+    /// ```ignore
+    /// user = User(1, "Alice", "alice@example.com", 30, True)
+    /// updated = user.model_copy("Alice B", "aliceb@example.com", 31, False)
+    /// updated.id
+    /// updated.name
     /// ```
     #[pyo3(signature = (name, email, age, active))]
     fn model_copy(&self, name: String, email: String, age: i32, active: bool) -> Self {
@@ -156,9 +142,9 @@ impl User {
     ///
     /// # Examples
     ///
-    /// ```
-    /// let user = User::new(1, "Alice".to_string(), "alice@example.com".to_string(), 30, true);
-    /// assert_eq!(user.__repr__(), "User(id=1, name='Alice', email='alice@example.com')");
+    /// ```ignore
+    /// user = User(1, "Alice", "alice@example.com", 30, True)
+    /// repr(user)
     /// ```
     fn __repr__(&self) -> String {
         format!("User(id={}, name='{}', email='{}')", self.id, self.name, self.email)

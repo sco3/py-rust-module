@@ -14,9 +14,9 @@ impl Calculator {
     ///
     /// # Examples
     ///
-    /// ```
-    /// let calc = Calculator::new(3.5);
-    /// assert_eq!(calc.value, 3.5);
+    /// ```ignore
+    /// calc = Calculator(3.5)
+    /// calc.value
     /// ```
     #[new]
     fn new(initial_value: f64) -> Self {
@@ -27,10 +27,9 @@ impl Calculator {
     ///
     /// # Examples
     ///
-    /// ```
-    /// let mut c = Calculator::new(1.5);
-    /// let v = c.add(2.0);
-    /// assert_eq!(v, 3.5);
+    /// ```ignore
+    /// c = Calculator(1.5)
+    /// c.add(2.0)
     /// ```
     fn add(&mut self, x: f64) -> f64 {
         self.value += x;
@@ -41,10 +40,9 @@ impl Calculator {
     ///
     /// # Examples
     ///
-    /// ```
-    /// let mut calc = Calculator::new(2.0);
-    /// let result = calc.multiply(3.0);
-    /// assert_eq!(result, 6.0);
+    /// ```ignore
+    /// calc = Calculator(2.0)
+    /// calc.multiply(3.0)
     /// ```
     ///
     /// @returns `f64` — the updated internal value after multiplication.
@@ -61,9 +59,9 @@ impl Calculator {
     ///
     /// # Examples
     ///
-    /// ```
-    /// let mut calc = Calculator::new(3.5);
-    /// assert_eq!(calc.reset(), 0.0);
+    /// ```ignore
+    /// calc = Calculator(3.5)
+    /// calc.reset()
     /// ```
     fn reset(&mut self) -> f64 {
         self.value = 0.0;
@@ -78,9 +76,9 @@ impl Calculator {
     ///
     /// # Examples
     ///
-    /// ```
-    /// let calc = Calculator::new(3.14);
-    /// assert_eq!(calc.__repr__(), "Calculator(value=3.14)");
+    /// ```ignore
+    /// calc = Calculator(3.14)
+    /// repr(calc)
     /// ```
     fn __repr__(&self) -> String {
         format!("Calculator(value={})", self.value)

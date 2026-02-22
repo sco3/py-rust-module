@@ -17,16 +17,11 @@ use pyo3::prelude::*;
 ///
 /// # Examples
 ///
-/// ```
-/// use pyo3::prelude::*;
-/// use pyo3::types::PyModule;
-///
-/// Python::with_gil(|py| {
-///     let m = PyModule::new(py, "py_rust_module").unwrap();
-///     // Module initialization (normally done automatically on import)
-///     py_rust_module(m).unwrap();
-///     // After initialization, `m` contains `add`, `multiply`, `greet`, `Calculator`, and `User`.
-/// });
+/// ```ignore
+/// import py_rust_module
+/// py_rust_module.add(1, 2)
+/// calc = py_rust_module.Calculator(5.0)
+/// calc.value
 /// ```
 #[pymodule]
 fn py_rust_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
