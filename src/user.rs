@@ -105,7 +105,7 @@ impl User {
     ///
     /// Python::with_gil(|py| {
     ///     let user = User::new(1, "Alice".into(), "alice@example.com".into(), 30, true);
-    ///     let d: &PyDict = user.dict(py);
+    ///     let d: &PyDict = user.dict(py).unwrap();
     ///     assert_eq!(d.get_item("id").unwrap().extract::<i32>().unwrap(), 1);
     ///     assert_eq!(d.get_item("name").unwrap().extract::<String>().unwrap(), "Alice");
     ///     assert_eq!(d.get_item("email").unwrap().extract::<String>().unwrap(), "alice@example.com");
@@ -113,14 +113,14 @@ impl User {
     ///     assert_eq!(d.get_item("active").unwrap().extract::<bool>().unwrap(), true);
     /// });
     /// ```
-    fn dict<'py>(&self, py: Python<'py>) -> Bound<'py, PyDict> {
+    fn dict<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyDict>> {
         let dict = PyDict::new(py);
-        dict.set_item("id", self.id).unwrap();
-        dict.set_item("name", &self.name).unwrap();
-        dict.set_item("email", &self.email).unwrap();
-        dict.set_item("age", self.age).unwrap();
-        dict.set_item("active", self.active).unwrap();
-        dict
+        dict.set_item("id", self.id)?;
+        dict.set_item("name", &self.name)?;
+        dict.set_item("email", &self.email)?;
+        dict.set_item("age", self.age)?;
+        dict.set_item("active", self.active)?;
+        Ok(dict)
     }
 
     /// Return a new User with the same `id` and the provided updated fields.
